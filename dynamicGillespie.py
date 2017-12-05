@@ -1,6 +1,8 @@
+import progressbar
+
 class dynamicGillespie():
 
-    def __init__(self):
+    def __init__(self,verbose=False):
 
         self.linkdict = None
         self.N = 0
@@ -20,6 +22,7 @@ class dynamicGillespie():
         self.s_lambda = {}
         self.s_linkweight = None
         self.results = []
+        self.verbose = verbose
 
     def init_from_file(self, path_to_file, daynight = False):
         """takes a csv file as input; format [user1 user2 timestamp duration], will not work if the duration is not equal for all links"""
@@ -268,6 +271,15 @@ class dynamicGillespie():
             self.regular_stepsize = self.stepsize
             self.stepsize = 0.5
 
+        if self.verbose:
+            bar = progressbar.ProgressBar(widgets=[
+                ' [', progressbar.Timer(), '] ',
+                      progressbar.Bar(),
+                ' (', progressbar.ETA(), ') ',
+                  ], 
+                  redirect_stdout=True,
+                  max_value = 100000,
+                    )
 
         counter = 0
         while counter < loop:
@@ -302,7 +314,12 @@ class dynamicGillespie():
 
             if mode == 'daynight':
                 epsilon = self.starting_epsilon
+                    
             while  self.duration > cur_time:
+
+                if self.verbose:
+                    bar.update(int((counter*self.duration+cur_time)/(loop*self.duration)*100000)) 
+
                 if epsilon == 1:
                     if mode == 'daynight':
                         self.update_neighbors(cur_time, mode)
@@ -337,6 +354,8 @@ class dynamicGillespie():
                     self.update_results(node_for_event, ISlinks, cur_time)
                     epsilon -= tau / (capLambda * self.stepsize)
                     tau = np.random.exponential(1)
+
+                    
 
             counter +=1
         if mode == "daynight":
