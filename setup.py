@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='dynGill',
-      version='0.2',
+      version='0.0.1',
       description='Implementation for epidemic Gillespie simulations on temporal networks',
       url='https://github.com/benmaier/timevariantGillespie',
       author='Benjamin F. Maier',
