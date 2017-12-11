@@ -9,8 +9,8 @@ setup(name='dynGill',
       license='MIT',
       packages=['dynGill'],
       install_requires=[
-          'networkx'
-          'numpy'
+          'networkx',
+          'numpy',
           'matplotlib'
       ],
       dependency_links=[
