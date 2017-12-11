@@ -1,8 +1,18 @@
-import progressbar
+import os
+import cPickle as pickle
+from datetime import datetime as dt
+from random import sample
+
+import networkx as nx
+from scipy.stats import rv_discrete
+import numpy as np
+
+from dynGill.data_processing import list_to_graph
+from dynGill.data_processing import list_to_daynight
 
 class dynamicGillespie():
 
-    def __init__(self,verbose=False):
+    def __init__(self):
 
         self.linkdict = None
         self.N = 0
@@ -22,7 +32,6 @@ class dynamicGillespie():
         self.s_lambda = {}
         self.s_linkweight = None
         self.results = []
-        self.verbose = verbose
 
     def init_from_file(self, path_to_file, daynight = False):
         """takes a csv file as input; format [user1 user2 timestamp duration], will not work if the duration is not equal for all links"""
@@ -31,8 +40,6 @@ class dynamicGillespie():
 
     def init_from_list(self, linklist, daynight = False):
         """takes a list of links as input; format [user1 user2 timestamp duration], will not work if the duration is not equal for all links"""
-        from data_processing import list_to_graph
-        if daynight: from data_processing import list_to_daynight
 
         if len(set([x[3] for x in linklist]))>1:
             print "incompatible list format; time slices must have the same duration throughout the list"
@@ -48,7 +55,6 @@ class dynamicGillespie():
         self.linklist_to_dict(linklist)
         self.G = list_to_graph(linklist, self.duration_data, self.stepsize, nodes_as_int = False)
         if daynight:
-            from datetime import datetime as dt
             Glist = list_to_daynight(linklist,[8,20],nodes_as_int = False, exportIDdict=False)
             self.G_day = Glist[0]
             self.G_night = Glist[1]
@@ -97,7 +103,6 @@ class dynamicGillespie():
 
     def calc_meandegree(self):
         """mean degree of the time averaged network"""
-        import networkx as nx
         return sum([x[2]['weight'] for x in nx.DiGraph(self.G).edges(data=True)])/float(len(self.G.nodes()))
 
     def set_disease_params(self, param_dict):
@@ -131,7 +136,6 @@ class dynamicGillespie():
         """victims can be either an int, then the infected are picked at random, or a list with node ids"""
         if type(victims) == float: victims = int(victims)
         if type(victims) == int:
-            from random import sample
             infected = sample(self.state.keys(),victims)
             for user in infected:
                 self.state[user] = 1
@@ -251,10 +255,6 @@ class dynamicGillespie():
 
     def simulate(self, mode, infection_seed, loop = 1):
         """ the main simulation function; infection seed can be eiter an int (then the seeds are chosen randomly) or a list with node IDs; modes can be chosen from: original, meanfield, meanfield_modulated, averaged, daynight, the_other """
-        from scipy.stats import rv_discrete
-        import networkx as nx
-        import numpy as np
-
         if not self.check_before_simulation():
             print "check if the initialisation was complete"
             return
@@ -271,15 +271,6 @@ class dynamicGillespie():
             self.regular_stepsize = self.stepsize
             self.stepsize = 0.5
 
-        if self.verbose:
-            bar = progressbar.ProgressBar(widgets=[
-                ' [', progressbar.Timer(), '] ',
-                      progressbar.Bar(),
-                ' (', progressbar.ETA(), ') ',
-                  ], 
-                  redirect_stdout=True,
-                  max_value = 100000,
-                    )
 
         counter = 0
         while counter < loop:
@@ -314,12 +305,7 @@ class dynamicGillespie():
 
             if mode == 'daynight':
                 epsilon = self.starting_epsilon
-                    
             while  self.duration > cur_time:
-
-                if self.verbose:
-                    bar.update(int((counter*self.duration+cur_time)/(loop*self.duration)*100000)) 
-
                 if epsilon == 1:
                     if mode == 'daynight':
                         self.update_neighbors(cur_time, mode)
@@ -355,20 +341,14 @@ class dynamicGillespie():
                     epsilon -= tau / (capLambda * self.stepsize)
                     tau = np.random.exponential(1)
 
-                    
-
             counter +=1
         if mode == "daynight":
             self.stepsize = self.regular_stepsize
         return
 
     def save(self,path,mkdir=True):
-        """ writes the simulation results in a pickle file; if mkdir is set on true creates the path if missing; saved results are saved as list of lists"""
-        import pickle
-        import os
 
         if mkdir:
-            import os
             if not os.path.exists(os.path.dirname(path)):
                 os.makedirs(os.path.dirname(path))
 

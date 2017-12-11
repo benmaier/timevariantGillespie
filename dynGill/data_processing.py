@@ -1,3 +1,5 @@
+#collection of functions used by dynamicGillespie class
+
 def read_file(path_to_file):
     #read file
     with open(path_to_file, 'r') as f:
@@ -233,7 +235,7 @@ def randomize_by_edge_swaps(list_of_edges, num_iterations, avoid_repetitions = T
     assert len(edge_list) == num_edges
     return edge_list
 
-
+import pdb
 def list_to_graph(edge_list, timespan, timestep, nodes_as_int = False, users = None, exportIDdict = False):
     import networkx as nx
 
@@ -246,14 +248,22 @@ def list_to_graph(edge_list, timespan, timestep, nodes_as_int = False, users = N
         for node_name in ID_to_int.keys():
             G.add_node(ID_to_int[node_name], name=node_name)
         for edge in edge_list:
-            if G.has_edge(ID_to_int[edge[0]],ID_to_int[edge[1]]): G.edge[ID_to_int[edge[0]]][ID_to_int[edge[1]]]['weight'] += 1
-            elif G.has_edge(ID_to_int[edge[1]],ID_to_int[edge[0]]): G.edge[ID_to_int[edge[1]]][ID_to_int[edge[0]]]['weight'] += 1
+            if G.has_edge(ID_to_int[edge[0]],ID_to_int[edge[1]]):
+                wght = G.adj[ID_to_int[edge[0]]][ID_to_int[edge[1]]]['weight']
+                G.add_edge(ID_to_int[edge[0]],ID_to_int[edge[1]], weight = wght + 1)
+            elif G.has_edge(ID_to_int[edge[1]],ID_to_int[edge[0]]):
+                wght = G.adj[ID_to_int[edge[1]]][ID_to_int[edge[0]]]['weight']
+                G.add_edge(ID_to_int[edge[1]],ID_to_int[edge[0]], weight = wght + 1)
             else: G.add_edge(ID_to_int[edge[0]],ID_to_int[edge[1]], weight = 1)
     else:
         if users: [G.add_node(x) for x in users]
         for edge in edge_list:
-            if G.has_edge(edge[0],edge[1]): G.edge[edge[0]][edge[1]]['weight'] += 1
-            elif G.has_edge(edge[1],edge[0]): G.edge[edge[1]][edge[0]]['weight'] += 1
+            if G.has_edge(edge[0],edge[1]):
+                wght = G.adj[edge[0]][edge[1]]['weight']
+                G.add_edge(edge[0],edge[1], weight = wght + 1)
+            elif G.has_edge(edge[1],edge[0]):
+                wght = G.adj[edge[1]][edge[0]]['weight']
+                G.add_edge(edge[1],edge[0], weight = wght + 1)
             else: G.add_edge(edge[0],edge[1], weight = 1)
 
     timespan /= float(timestep)
@@ -264,7 +274,7 @@ def list_to_graph(edge_list, timespan, timestep, nodes_as_int = False, users = N
     else: return G
 
 def list_to_daynight(edge_list,interval, nodes_as_int = False, exportIDdict=False):
-
+    """ very similar to the function from mean_trans_matrix.py; is tailored to be used by dynamicGillespie class"""
     from datetime import datetime as dt
 
     timestep = edge_list[0][3]
